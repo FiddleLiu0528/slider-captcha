@@ -14,7 +14,7 @@ const SliderDragArea = ref();
 const SliderDragAreaButton = ref();
 
 type SliderCaptcha = {
-  captchaDirection: string;
+  captchaDirection: CaptchaDirection;
   imageWidth: number;
   imageHeight: number;
   backgroundBase64String: string;
@@ -29,13 +29,18 @@ enum CaptchaDirection {
   BottomToTop,
 }
 
-const isRetrieveCaptchaImageSuccess = ref(false);
+enum Axis {
+  Horizontal,
+  Vertical,
+}
 
-const sliderCaptchaObject = ref<SliderCaptcha | null>(null);
+const isRetrieveCaptchaImageSuccess = ref(false);
 
 const selectedDirection = ref(CaptchaDirection[CaptchaDirection.LeftToRight]);
 const selectedWidth = ref(280);
 const selectedHeight = ref(150);
+
+const sliderCaptchaObject = ref<SliderCaptcha | null>(null);
 
 const sliderImageNaturalWidth = ref(0);
 const sliderImageNaturalHeight = ref(0);
@@ -121,6 +126,14 @@ const isDragTrailManual = computed(() => {
   return GetStandardDeviation(dragTrailRecord.value) !== 0;
 });
 
+const currentDirection = computed(() => {
+  return sliderCaptchaObject.value?.captchaDirection ===
+    CaptchaDirection.LeftToRight ||
+    sliderCaptchaObject.value?.captchaDirection === CaptchaDirection.RightToLeft
+    ? Axis.Horizontal
+    : Axis.Vertical;
+});
+
 const RetrieveImg = () => {
   const queryObject = {
     CaptchaDirection: selectedDirection.value,
@@ -201,98 +214,122 @@ const MouseDownDragButton = (e: MouseEvent) => {
   <template v-if="isRetrieveCaptchaImageSuccess">
     <h1>Slider captcha example</h1>
 
-    <div id="captcha-image-area" v-if="sliderCaptchaObject">
-      <img
-        id="captcha-img-slider"
-        ref="CaptchaImgSlider"
-        :src="sliderCaptchaObject.sliderBase64String"
-        :style="processImageSliderMoveStyle"
-      />
-      <img
-        id="captcha-img-background"
-        ref="CaptchaImgBackground"
-        :src="sliderCaptchaObject.backgroundBase64String"
-      />
-      <IconRotateRight class="reload-icon" @click="Reload()" />
-    </div>
+    <div id="captcha-area" v-if="sliderCaptchaObject">
+      <div id="captcha-image-area">
+        <img
+          id="captcha-img-slider"
+          ref="CaptchaImgSlider"
+          :src="sliderCaptchaObject.sliderBase64String"
+          :style="processImageSliderMoveStyle"
+        />
+        <img
+          id="captcha-img-background"
+          ref="CaptchaImgBackground"
+          :src="sliderCaptchaObject.backgroundBase64String"
+        />
+        <IconRotateRight class="reload-icon" @click="Reload()" />
+      </div>
 
-    <div id="captcha-drag-area" ref="SliderDragArea">
-      <div id="progress-bar" :style="processProgressBarStyle"></div>
       <div
-        ref="SliderDragAreaButton"
-        id="captcha-drag-area-button"
-        @mousedown="MouseDownDragButton($event)"
+        id="captcha-drag-area"
+        ref="SliderDragArea"
+        :class="
+          sliderCaptchaObject.captchaDirection ===
+            CaptchaDirection.LeftToRight ||
+          sliderCaptchaObject.captchaDirection === CaptchaDirection.RightToLeft
+            ? 'horizontal'
+            : 'vertical'
+        "
       >
-        <IconArrowRight class="button-icon" />
+        <div id="progress-bar" :style="processProgressBarStyle"></div>
+        <div
+          ref="SliderDragAreaButton"
+          id="captcha-drag-area-button"
+          @mousedown="MouseDownDragButton($event)"
+        >
+          <IconArrowRight class="button-icon" />
+        </div>
       </div>
     </div>
 
-    <div id="toos-area">
+    <div id="tools-area">
       <h3>tools</h3>
 
-      <div class="direction-select-block">
-        <span>Direction:</span>
-        <input
-          type="radio"
-          id="LeftToRight"
-          :value="CaptchaDirection[CaptchaDirection.LeftToRight]"
-          v-model="selectedDirection"
-        />
-        <label for="LeftToRight">LeftToRight</label>
+      <div class="tools-content">
+        <div class="direction-select-block">
+          <span>Direction:</span>
+          <input
+            type="radio"
+            id="LeftToRight"
+            :value="CaptchaDirection[CaptchaDirection.LeftToRight]"
+            v-model="selectedDirection"
+          />
+          <label for="LeftToRight">LeftToRight</label>
 
-        <input
-          type="radio"
-          id="RightToLeft"
-          :value="CaptchaDirection[CaptchaDirection.RightToLeft]"
-          v-model="selectedDirection"
-        />
-        <label for="RightToLeft">RightToLeft</label>
+          <input
+            type="radio"
+            id="RightToLeft"
+            :value="CaptchaDirection[CaptchaDirection.RightToLeft]"
+            v-model="selectedDirection"
+          />
+          <label for="RightToLeft">RightToLeft</label>
 
-        <input
-          type="radio"
-          id="TopToBottom"
-          :value="CaptchaDirection[CaptchaDirection.TopToBottom]"
-          v-model="selectedDirection"
-        />
-        <label for="TopToBottom">TopToBottom</label>
+          <input
+            type="radio"
+            id="TopToBottom"
+            :value="CaptchaDirection[CaptchaDirection.TopToBottom]"
+            v-model="selectedDirection"
+          />
+          <label for="TopToBottom">TopToBottom</label>
 
-        <input
-          type="radio"
-          id="BottomToTop"
-          :value="CaptchaDirection[CaptchaDirection.BottomToTop]"
-          v-model="selectedDirection"
-        />
-        <label for="BottomToTop">BottomToTop</label>
-      </div>
+          <input
+            type="radio"
+            id="BottomToTop"
+            :value="CaptchaDirection[CaptchaDirection.BottomToTop]"
+            v-model="selectedDirection"
+          />
+          <label for="BottomToTop">BottomToTop</label>
+        </div>
 
-      <div class="size-select-block">
-        <span>Size:</span>
-        <input
-          type="range"
-          min="128"
-          max="2048"
-          step="1"
-          v-model="selectedWidth"
-        />
-        <input type="text" v-model="selectedWidth" />
-        <label>Width</label>
-        <input
-          type="range"
-          min="128"
-          max="2048"
-          step="1"
-          v-model="selectedHeight"
-        />
-        <input type="text" v-model="selectedHeight" />
-        <label>Height</label>
-      </div>
+        <div class="size-select-block">
+          <span>Size:</span>
+          <input
+            type="range"
+            min="128"
+            max="2048"
+            step="1"
+            v-model="selectedWidth"
+          />
+          <input type="text" v-model="selectedWidth" />
+          <label>Width</label>
+          <input
+            type="range"
+            min="128"
+            max="2048"
+            step="1"
+            v-model="selectedHeight"
+          />
+          <input type="text" v-model="selectedHeight" />
+          <label>Height</label>
+          <button
+            style="margin-left: 10px"
+            @click="
+              selectedWidth = 280;
+              selectedHeight = 150;
+            "
+          >
+            set default
+          </button>
+        </div>
 
-      <div>
-        <button @click="Reload()">Reload</button>
-      </div>
-      <div>
-        <button @click="Reload()">Fit</button>
-        <button @click="Reload()">Expand</button>
+        <div>
+          <button @click="Reload()">Reload</button>
+        </div>
+
+        <div>
+          <button @click="Reload()">Fit</button>
+          <button @click="Reload()">Expand</button>
+        </div>
       </div>
     </div>
     <hr />
@@ -340,121 +377,142 @@ const MouseDownDragButton = (e: MouseEvent) => {
 </template>
 
 <style lang="scss">
-#captcha-image-area {
-  display: inline-block;
-  position: relative;
+#captcha-area {
+  display: flex;
 
-  #captcha-img-background {
-    object-fit: fill;
+  &.horizontal {
+    flex-direction: column;
   }
 
-  #captcha-img-slider {
-    position: absolute;
+  &.vertical {
+    flex-direction: row;
   }
 
-  .reload-icon {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    width: 30px;
-    cursor: pointer;
-    transition: 0.1s linear;
+  #captcha-image-area {
+    display: inline-block;
+    position: relative;
 
-    fill: rgba(255, 255, 255, 0.5);
-    filter: drop-shadow(3px 3px 2px rgba(0, 0, 0, 0.8));
+    #captcha-img-background {
+      object-fit: fill;
+    }
 
-    &:hover {
-      fill: rgba(255, 255, 255, 0.8);
-      filter: drop-shadow(3px 5px 2px rgba(0, 0, 0, 0.4));
+    #captcha-img-slider {
+      position: absolute;
+    }
+
+    .reload-icon {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 30px;
+      cursor: pointer;
+      transition: 0.1s linear;
+
+      fill: rgba(255, 255, 255, 0.5);
+      filter: drop-shadow(3px 3px 2px rgba(0, 0, 0, 0.8));
+
+      &:hover {
+        fill: rgba(255, 255, 255, 0.8);
+        filter: drop-shadow(3px 5px 2px rgba(0, 0, 0, 0.4));
+      }
     }
   }
-}
 
-#captcha-drag-area {
-  display: flex;
-  user-select: none;
-
-  box-sizing: border-box;
-
-  width: 100%;
-  height: 40px;
-
-  background-color: #f7f9fa;
-  border-radius: 2px;
-  border: 1px solid #e6e8eb;
-
-  #captcha-drag-area-button {
-    width: 10%;
-    height: 100%;
+  #captcha-drag-area {
+    display: flex;
+    user-select: none;
 
     box-sizing: border-box;
 
-    &:hover {
-      background-color: rgb(255, 255, 255);
-    }
-
-    background: #fff;
-    box-shadow: 0 0 3px rgb(0 0 0 / 30%);
-    cursor: pointer;
-    transition: 0.2s linear;
-    border-radius: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    .button-icon {
-      width: 50%;
-      height: 50%;
-
-      &.arrow {
-      }
-
-      &.x-mark {
-      }
-
-      &.check {
-      }
-    }
-  }
-
-  #progress-bar {
-    width: 0;
+    width: 100%;
     height: 100%;
-    background-color: rgb(0, 255, 136);
+
+    &.horizontal {
+      width: 40px;
+    }
+
+    &.vertical {
+      height: 40px;
+    }
+    background-color: #f7f9fa;
+    border-radius: 2px;
+    border: 1px solid #e6e8eb;
+
+    #captcha-drag-area-button {
+      width: 100%;
+      height: 100%;
+
+      box-sizing: border-box;
+
+      &:hover {
+        background-color: rgb(255, 255, 255);
+      }
+
+      background: #fff;
+      box-shadow: 0 0 3px rgb(0 0 0 / 30%);
+      cursor: pointer;
+      transition: 0.2s linear;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      .button-icon {
+        width: 50%;
+        height: 50%;
+
+        &.arrow {
+        }
+
+        &.x-mark {
+        }
+
+        &.check {
+        }
+      }
+    }
+
+    #progress-bar {
+      width: 100%;
+      height: 100%;
+      background-color: rgb(0, 255, 136);
+    }
   }
 }
 
-#toos-area {
-  .direction-select-block {
+#tools-area {
+  .tools-content {
     background-color: rgb(68, 68, 68);
     border-radius: 5px;
-    padding: 5px;
+    padding: 10px;
 
-    display: flex;
-    align-items: center;
+    .direction-select-block {
+      display: flex;
+      align-items: center;
 
-    input {
-      margin: 0;
-      margin-left: 10px;
-    }
-  }
-
-  .size-select-block {
-    background-color: rgb(68, 68, 68);
-    border-radius: 5px;
-    padding: 5px;
-
-    display: flex;
-    align-items: center;
-
-    input {
-      margin: 0;
-      margin-left: 10px;
+      input {
+        margin: 0;
+        margin-left: 10px;
+      }
     }
 
-    input[type="text"] {
-      width: 30px;
+    .size-select-block {
+      background-color: rgb(68, 68, 68);
       border-radius: 5px;
+      padding: 5px;
+
+      display: flex;
+      align-items: center;
+
+      input {
+        margin: 0;
+        margin-left: 10px;
+      }
+
+      input[type="text"] {
+        width: 30px;
+        border-radius: 5px;
+      }
     }
   }
 }
