@@ -1,0 +1,21 @@
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  background-color: #212126;
+
+  color: #b8c5cc;
+  font-family: Arial, "Microsoft JhengHei";
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#app {
+  width: 80%;
+  height: 80%;
+}
