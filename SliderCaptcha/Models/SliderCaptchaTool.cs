@@ -302,9 +302,9 @@ namespace SliderCaptcha.Models
 
                 int? slideOffset = null;
                 if (direction is CaptchaDirection.LeftToRight) { slideOffset = placeAtX; }
-                else if (direction is CaptchaDirection.RightToLeft) { slideOffset = (int)(width - (pathWidth / 2) - placeAtX); }
+                else if (direction is CaptchaDirection.RightToLeft) { slideOffset = (int)(width - placeAtX - pathWidth); }
                 else if (direction is CaptchaDirection.TopToBottom) { slideOffset = placeAtY; }
-                else if (direction is CaptchaDirection.BottomToTop) { slideOffset = (int)(height - (pathHeight / 2) - placeAtY); }
+                else if (direction is CaptchaDirection.BottomToTop) { slideOffset = (int)(height - placeAtY - pathHeight); }
 
                 return (captchaBackground.ToBase64String(PngFormat.Instance), captchaSlider.ToBase64String(PngFormat.Instance), slideOffset);
             }
@@ -371,7 +371,7 @@ namespace SliderCaptcha.Models
         /// <summary>
         /// Slider Base64 String
         /// </summary>
-        public string SliderBase64String { get; set; }= string.Empty;
+        public string SliderBase64String { get; set; } = string.Empty;
 
         /// <summary>
         /// Slide Offset

@@ -22,18 +22,6 @@ type SliderCaptcha = {
   slideOffset?: number;
 };
 
-enum CaptchaDirection {
-  LeftToRight,
-  RightToLeft,
-  TopToBottom,
-  BottomToTop,
-}
-
-enum Axis {
-  Horizontal,
-  Vertical,
-}
-
 const isRetrieveCaptchaImageSuccess = ref(false);
 
 const selectedDirection = ref(CaptchaDirection[CaptchaDirection.LeftToRight]);
@@ -60,6 +48,16 @@ onMounted(() => {
 
 const isSliderDraged = computed(() => {
   return !!dragTrailRecord.value.length;
+});
+
+const currentAxes = computed(() => {
+  console.log(CaptchaDirection[CaptchaDirection.BottomToTop]);
+
+  return sliderCaptchaObject.value?.captchaDirection ===
+    CaptchaDirection.LeftToRight ||
+    sliderCaptchaObject.value?.captchaDirection === CaptchaDirection.RightToLeft
+    ? Axes.Horizontal
+    : Axes.Vertical;
 });
 
 const dragSliderMovePixel = computed(() => {
@@ -126,12 +124,8 @@ const isDragTrailManual = computed(() => {
   return GetStandardDeviation(dragTrailRecord.value) !== 0;
 });
 
-const currentDirection = computed(() => {
-  return sliderCaptchaObject.value?.captchaDirection ===
-    CaptchaDirection.LeftToRight ||
-    sliderCaptchaObject.value?.captchaDirection === CaptchaDirection.RightToLeft
-    ? Axis.Horizontal
-    : Axis.Vertical;
+const isSlideOffsetAcceptable = computed(() => {
+  return null;
 });
 
 const RetrieveImg = () => {
@@ -214,7 +208,11 @@ const MouseDownDragButton = (e: MouseEvent) => {
   <template v-if="isRetrieveCaptchaImageSuccess">
     <h1>Slider captcha example</h1>
 
-    <div id="captcha-area" v-if="sliderCaptchaObject">
+    <div
+      id="captcha-area"
+      :class="currentAxes === Axes.Horizontal ? 'horizontal' : 'vertical'"
+      v-if="sliderCaptchaObject"
+    >
       <div id="captcha-image-area">
         <img
           id="captcha-img-slider"
@@ -247,7 +245,39 @@ const MouseDownDragButton = (e: MouseEvent) => {
           id="captcha-drag-area-button"
           @mousedown="MouseDownDragButton($event)"
         >
-          <IconArrowRight class="button-icon" />
+          <IconArrowRight
+            v-if="isSliderDraged === false && isSlideOffsetAcceptable == null"
+            class="button-icon arrow"
+            :class="{
+              'left-to-right':
+                sliderCaptchaObject?.captchaDirection ===
+                CaptchaDirection.LeftToRight,
+              'right-to-left':
+                sliderCaptchaObject?.captchaDirection ===
+                CaptchaDirection.RightToLeft,
+              'top-to-bottom':
+                sliderCaptchaObject?.captchaDirection ===
+                CaptchaDirection.TopToBottom,
+              'bottom-to-top':
+                sliderCaptchaObject?.captchaDirection ===
+                CaptchaDirection.BottomToTop,
+            }"
+          />
+          <IconXmark
+            v-if="
+              isSliderDraged &&
+              (!isDragTrailManual || isSlideOffsetAcceptable === false)
+            "
+            class="button-icon"
+          />
+          <IconCheck
+            v-if="
+              isSliderDraged &&
+              isDragTrailManual &&
+              isSlideOffsetAcceptable === true
+            "
+            class="button-icon"
+          />
         </div>
       </div>
     </div>
@@ -337,6 +367,10 @@ const MouseDownDragButton = (e: MouseEvent) => {
     <div>
       <h3>status</h3>
 
+      <div>[captchaDirection:{{ sliderCaptchaObject?.captchaDirection }}]</div>
+      <div>[currentAxes:{{ currentAxes }}]</div>
+      <div>[currentAxes:{{ Axes[currentAxes] }}]</div>
+      <br />
       <div>[slideOffset:{{ sliderCaptchaObject?.slideOffset }}]</div>
       <div>[caledResult:{{ caledSlideOffsetResult }}]</div>
       <br />
@@ -348,7 +382,7 @@ const MouseDownDragButton = (e: MouseEvent) => {
       </div>
       <br />
 
-      <div>[isDraged:{{ isSliderDraged }}]</div>
+      <div>[isSliderDraged:{{ isSliderDraged }}]</div>
       <div>[originX:{{ originX }}]</div>
       <div>[originY:{{ originY }}]</div>
       <div>[moveX:{{ moveX }}]</div>
@@ -356,7 +390,7 @@ const MouseDownDragButton = (e: MouseEvent) => {
 
       <br />
 
-      <div>[processBarStyle:{{ processProgressBarStyle }}]</div>
+      <div>[processProgressBarStyle:{{ processProgressBarStyle }}]</div>
       <div>[processImageSliderMoveStyle:{{ processImageSliderMoveStyle }}]</div>
 
       <br />
@@ -462,6 +496,20 @@ const MouseDownDragButton = (e: MouseEvent) => {
         height: 50%;
 
         &.arrow {
+          &.left-to-right {
+          }
+
+          &.right-to-left {
+            transform: rotate(180deg);
+          }
+
+          &.top-to-bottom {
+            transform: rotate(90deg);
+          }
+
+          &.bottom-to-top {
+            transform: rotate(-90deg);
+          }
         }
 
         &.x-mark {
