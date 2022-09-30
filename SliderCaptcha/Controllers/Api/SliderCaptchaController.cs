@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using SliderCaptcha.Models;
 using static SliderCaptcha.Models.SliderCaptchaModels;
 
-namespace SliderCaptcha.Controllers
+namespace SliderCaptcha.Controllers.Api
 {
     /// <summary>
     /// Slider Captcha
