@@ -6,7 +6,7 @@ const DomSliderCaptcha = ref();
 
 const isRetrieveCaptchaImageSuccess = ref(false);
 
-const targetUrl = "";
+const targetUrl = "/api/SliderCaptcha";
 const lang = "";
 </script>
 
@@ -16,6 +16,7 @@ const lang = "";
   <div v-show="isRetrieveCaptchaImageSuccess">
     <SliderCaptcha
       ref="DomSliderCaptcha"
+      :acceptablePixelRange="2"
       :targetUrl="targetUrl"
       :lang="lang"
       @UpdateRetrieveCaptchaImageStatus="isRetrieveCaptchaImageSuccess = $event"

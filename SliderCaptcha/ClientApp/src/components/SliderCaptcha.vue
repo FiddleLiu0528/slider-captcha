@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import DragBar from "@/components/widget/DragBar.vue";
 
 import { Axes } from "@/types/Axes";
@@ -10,14 +10,21 @@ import IconRotateRight from "./icons/IconRotateRight.vue";
 import { GetParam } from "@/utils/getParam";
 import { GetStandardDeviation } from "@/utils/GetStandardDeviation";
 
-const prop = defineProps<{
-  targetUrl: string;
-  lang: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    acceptablePixelRange?: number;
+    targetUrl: string;
+    lang: string;
+  }>(),
+  {
+    acceptablePixelRange: 2,
+  }
+);
 
 const emit = defineEmits(["UpdateRetrieveCaptchaImageStatus"]);
 
 const DomDragBar = ref();
+const DomCaptchaContainer = ref();
 
 const ImageSlider = ref();
 const ImageBackground = ref();
@@ -45,6 +52,11 @@ const imageSliderNaturalHeight = ref(0);
 const imageBackgroundNaturalWidth = ref(0);
 const imageBackgroundNaturalHeight = ref(0);
 
+const imageSliderClientWidth = ref(null);
+const imageSliderClientHeight = ref(null);
+const imageBackgroundClientWidth = ref(null);
+const imageBackgroundClientHeight = ref(null);
+
 const dragTrailRecord = ref<number[]>([]);
 
 const dragedDistanceRate = ref(0);
@@ -53,6 +65,24 @@ onMounted(() => {
   SetDefault();
   RetrieveImg();
 });
+
+watch(
+  DomCaptchaContainer,
+  (newValue) => {
+    if (!newValue) return;
+    const resizeObserver = new ResizeObserver(() => {
+      imageSliderClientWidth.value = ImageSlider.value?.clientWidth;
+      imageSliderClientHeight.value = ImageSlider.value?.clientHeight;
+      imageBackgroundClientWidth.value = ImageBackground.value?.clientWidth;
+      imageBackgroundClientHeight.value = ImageBackground.value?.clientHeight;
+    });
+
+    resizeObserver.observe(newValue);
+  },
+  {
+    immediate: true,
+  }
+);
 
 const SetDefault = () => {
   selectedDirection.value = Direction[Direction.LeftToRight];
@@ -69,18 +99,18 @@ const currentAxes = computed(() => {
 });
 
 const processImageSliderStyle = computed(() => {
-  const isExist =
-    ImageSlider.value?.clientWidth != null &&
-    ImageSlider.value?.clientHeight != null &&
-    ImageBackground.value?.clientWidth != null &&
-    ImageBackground.value?.clientHeight != null;
-
-  if (!isExist) return {};
+  if (
+    imageSliderClientWidth.value == null ||
+    imageSliderClientHeight.value == null ||
+    imageBackgroundClientWidth.value == null ||
+    imageBackgroundClientHeight.value == null
+  )
+    return {};
 
   const imgRemainSpace =
     currentAxes.value === Axes.Horizontal
-      ? ImageBackground.value.clientWidth - ImageSlider.value.clientWidth
-      : ImageBackground.value.clientHeight - ImageSlider.value.clientHeight;
+      ? imageBackgroundClientWidth.value - imageSliderClientWidth.value
+      : imageBackgroundClientHeight.value - imageSliderClientHeight.value;
 
   const result = dragedDistanceRate.value * imgRemainSpace;
 
@@ -125,11 +155,11 @@ const isDragTrailManual = computed(() => {
 
 const isDragedOffsetAcceptable = computed(() => {
   if (!resultObject.value?.slideOffset) return false;
-  const acceptablePixelRange = 2; //
+  // const acceptablePixelRange = acceptablePixelRange; // should
 
   return (
     Math.abs(dragedOffset.value - resultObject.value.slideOffset) <
-    acceptablePixelRange
+    props.acceptablePixelRange
   );
 });
 
@@ -142,7 +172,7 @@ const RetrieveImg = () => {
     },
   };
 
-  fetch(`/api/SliderCaptcha?${GetParam(queryObject).toString()}`)
+  fetch(`${props.targetUrl}?${GetParam(queryObject).toString()}`)
     .then((response) => {
       return response.json();
     })
@@ -153,12 +183,15 @@ const RetrieveImg = () => {
       emit("UpdateRetrieveCaptchaImageStatus", true);
 
       nextTick(() => {
-        imageSliderNaturalWidth.value = ImageSlider?.value?.naturalWidth;
-        imageSliderNaturalHeight.value = ImageSlider?.value?.naturalHeight;
-        imageBackgroundNaturalWidth.value =
-          ImageBackground?.value?.naturalWidth;
+        imageSliderNaturalWidth.value = ImageSlider.value?.naturalWidth;
+        imageSliderNaturalHeight.value = ImageSlider.value?.naturalHeight;
+        imageBackgroundNaturalWidth.value = ImageBackground.value?.naturalWidth;
         imageBackgroundNaturalHeight.value =
-          ImageBackground?.value?.naturalHeight;
+          ImageBackground.value?.naturalHeight;
+        imageSliderClientWidth.value = ImageSlider.value?.clientWidth;
+        imageSliderClientHeight.value = ImageSlider.value?.clientHeight;
+        imageBackgroundClientWidth.value = ImageBackground.value?.clientWidth;
+        imageBackgroundClientHeight.value = ImageBackground.value?.clientHeight;
       });
     })
     .catch((err) => {
@@ -182,6 +215,7 @@ defineExpose({
 <template>
   <div id="captcha-area" v-if="resultObject">
     <div
+      ref="DomCaptchaContainer"
       class="captcha-container"
       :class="[
         currentAxes === Axes.Horizontal
@@ -265,7 +299,7 @@ defineExpose({
         <input
           type="range"
           min="128"
-          max="2048"
+          max="1280"
           step="1"
           v-model="selectedWidth"
         />
@@ -274,7 +308,7 @@ defineExpose({
         <input
           type="range"
           min="128"
-          max="2048"
+          max="1280"
           step="1"
           v-model="selectedHeight"
         />
@@ -417,6 +451,7 @@ defineExpose({
   .select-block {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     padding: 10px;
 
     input {

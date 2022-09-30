@@ -9,7 +9,7 @@ import IconCheck from "@/components/icons/IconCheck.vue";
 
 const emit = defineEmits(["AddDragTrailRecord", "UpdateDragedDistanceRate"]);
 
-const prop = defineProps<{
+const props = defineProps<{
   direction: Direction;
   currentAxes: Axes;
   isDragTrailManual: boolean;
@@ -32,44 +32,21 @@ const originY = ref(0);
 const movedX = ref(0);
 const movedY = ref(0);
 
+const movedPercentage = ref(0);
+
 const isDraged = ref(false);
 
-const buttonDragedPixel = computed(() => {
-  if (!DragBar.value || !DragButton.value) return;
-
-  let MaxDistanceWidth =
-    DragBar.value.clientWidth - DragButton.value.clientWidth;
-  let MaxDistanceHeight =
-    DragBar.value.clientHeight - DragButton.value.clientHeight;
-
-  if (prop.direction === Direction.LeftToRight) {
-    if (movedX.value <= 0) return 0;
-    else if (movedX.value > MaxDistanceWidth) return MaxDistanceWidth;
-    return movedX.value;
-  } else if (prop.direction === Direction.RightToLeft) {
-    if (movedX.value <= -MaxDistanceWidth) return MaxDistanceWidth;
-    else if (movedX.value > 0) return 0;
-    return Math.abs(movedX.value);
-  } else if (prop.direction === Direction.TopToBottom) {
-    if (movedY.value <= 0) return 0;
-    else if (movedY.value > MaxDistanceHeight) return MaxDistanceHeight;
-    return movedY.value;
-  } else if (prop.direction === Direction.BottomToTop) {
-    if (movedY.value <= -MaxDistanceHeight) return MaxDistanceHeight;
-    else if (movedY.value > 0) return 0;
-    return Math.abs(movedY.value);
-  }
-
-  return 0;
-});
-
 const processProgressBarStyle = computed(() => {
+  const result = `${
+    movedPercentage.value * (100 - buttonLengthPercentage.value)
+  }%`;
+
   return {
-    ...(prop.currentAxes === Axes.Horizontal && {
-      width: `${buttonDragedPixel.value}px`,
+    ...(props.currentAxes === Axes.Horizontal && {
+      width: result,
     }),
-    ...(prop.currentAxes === Axes.Vertical && {
-      height: `${buttonDragedPixel.value}px`,
+    ...(props.currentAxes === Axes.Vertical && {
+      height: result,
     }),
   };
 });
@@ -85,48 +62,40 @@ const ExecuteDragButtonEvent = (e: MouseEvent) => {
     movedY.value = e1.clientY - originY.value;
 
     const dragRemainSpace =
-      prop.currentAxes === Axes.Horizontal
+      props.currentAxes === Axes.Horizontal
         ? DragBar.value.clientWidth - DragButton.value.clientWidth
         : DragBar.value.clientHeight - DragButton.value.clientHeight;
 
-    if (prop.direction === Direction.LeftToRight) {
+    if (props.direction === Direction.LeftToRight) {
       if (movedX.value < 0 || movedX.value > dragRemainSpace) return;
 
+      movedPercentage.value = Math.abs(movedX.value / dragRemainSpace);
       emit("AddDragTrailRecord", Math.round(movedY.value));
-      emit(
-        "UpdateDragedDistanceRate",
-        Math.abs(movedX.value / dragRemainSpace)
-      );
+      emit("UpdateDragedDistanceRate", movedPercentage.value);
     }
 
-    if (prop.direction === Direction.RightToLeft) {
+    if (props.direction === Direction.RightToLeft) {
       if (movedX.value < -dragRemainSpace || movedX.value > 0) return;
 
+      movedPercentage.value = Math.abs(movedX.value / dragRemainSpace);
       emit("AddDragTrailRecord", Math.round(movedY.value));
-      emit(
-        "UpdateDragedDistanceRate",
-        Math.abs(movedX.value / dragRemainSpace)
-      );
+      emit("UpdateDragedDistanceRate", movedPercentage.value);
     }
 
-    if (prop.direction === Direction.TopToBottom) {
+    if (props.direction === Direction.TopToBottom) {
       if (movedY.value < 0 || movedY.value > dragRemainSpace) return;
 
+      movedPercentage.value = Math.abs(movedY.value / dragRemainSpace);
       emit("AddDragTrailRecord", Math.round(movedX.value));
-      emit(
-        "UpdateDragedDistanceRate",
-        Math.abs(movedY.value / dragRemainSpace)
-      );
+      emit("UpdateDragedDistanceRate", movedPercentage.value);
     }
 
-    if (prop.direction === Direction.BottomToTop) {
+    if (props.direction === Direction.BottomToTop) {
       if (movedY.value < -dragRemainSpace || movedY.value > 0) return;
 
+      movedPercentage.value = Math.abs(movedY.value / dragRemainSpace);
       emit("AddDragTrailRecord", Math.round(movedX.value));
-      emit(
-        "UpdateDragedDistanceRate",
-        Math.abs(movedY.value / dragRemainSpace)
-      );
+      emit("UpdateDragedDistanceRate", movedPercentage.value);
     }
   };
 
@@ -150,6 +119,8 @@ const Reset = () => {
   movedX.value = 0;
   movedY.value = 0;
 
+  movedPercentage.value = 0;
+
   emit("UpdateDragedDistanceRate", 0);
 };
 
@@ -163,8 +134,8 @@ defineExpose({
     id="drag-bar"
     ref="DragBar"
     :class="{
-      horizontal: prop.currentAxes === Axes.Horizontal,
-      vertical: prop.currentAxes === Axes.Vertical,
+      horizontal: props.currentAxes === Axes.Horizontal,
+      vertical: props.currentAxes === Axes.Vertical,
       'left-to-right': direction === Direction.LeftToRight,
       'right-to-left': direction === Direction.RightToLeft,
       'top-to-bottom': direction === Direction.TopToBottom,
@@ -177,8 +148,8 @@ defineExpose({
       id="drag-button"
       ref="DragButton"
       :class="{
-        horizontal: prop.currentAxes === Axes.Horizontal,
-        vertical: prop.currentAxes === Axes.Vertical,
+        horizontal: props.currentAxes === Axes.Horizontal,
+        vertical: props.currentAxes === Axes.Vertical,
       }"
       @mousedown="ExecuteDragButtonEvent($event)"
     >
@@ -265,10 +236,12 @@ defineExpose({
 
     &.horizontal {
       width: v-bind(calButtonLengthPercentage);
+      min-width: v-bind(calButtonLengthPercentage);
     }
 
     &.vertical {
       height: v-bind(calButtonLengthPercentage);
+      min-height: v-bind(calButtonLengthPercentage);
     }
 
     &:hover {
