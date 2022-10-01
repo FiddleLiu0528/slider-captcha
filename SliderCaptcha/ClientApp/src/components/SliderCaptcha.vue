@@ -388,6 +388,7 @@ defineExpose({
 <style lang="scss" scoped>
 #captcha-area {
   display: flex;
+  overflow: auto;
 
   .captcha-container {
     display: flex;
@@ -444,6 +445,7 @@ defineExpose({
     background-color: rgb(68, 68, 68);
     border-radius: 5px;
     padding: 10px;
+    word-wrap: break-word;
   }
 }
 

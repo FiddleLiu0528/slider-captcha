@@ -51,15 +51,21 @@ const processProgressBarStyle = computed(() => {
   };
 });
 
-const ExecuteDragButtonEvent = (e: MouseEvent) => {
+const ExecuteDragButtonEvent = (e: MouseEvent | TouchEvent) => {
   if (isDraged.value) return;
 
-  originX.value = e.clientX;
-  originY.value = e.clientY;
+  originX.value = e instanceof MouseEvent ? e.clientX : e.touches[0].clientX;
+  originY.value = e instanceof MouseEvent ? e.clientY : e.touches[0].clientY;
 
-  const mouseMoveHandler = (e1: MouseEvent): void => {
-    movedX.value = e1.clientX - originX.value;
-    movedY.value = e1.clientY - originY.value;
+  const touchMoveHandler = (e1: MouseEvent | TouchEvent): void => {
+    movedX.value =
+      e1 instanceof MouseEvent
+        ? e1.clientX - originX.value
+        : e1.touches[0].clientX - originX.value;
+    movedY.value =
+      e1 instanceof MouseEvent
+        ? e1.clientY - originY.value
+        : e1.touches[0].clientY - originY.value;
 
     const dragRemainSpace =
       props.currentAxes === Axes.Horizontal
@@ -99,15 +105,27 @@ const ExecuteDragButtonEvent = (e: MouseEvent) => {
     }
   };
 
-  const mouseUpHandler = (): void => {
+  const touchEndHandler = (): void => {
     isDraged.value = true;
 
-    document.removeEventListener("mouseup", mouseUpHandler);
-    document.removeEventListener("mousemove", mouseMoveHandler);
+    document.removeEventListener(
+      e instanceof MouseEvent ? "mousemove" : "touchmove",
+      touchMoveHandler
+    );
+    document.removeEventListener(
+      e instanceof MouseEvent ? "mouseup" : "touchend",
+      touchEndHandler
+    );
   };
 
-  document.addEventListener("mousemove", mouseMoveHandler);
-  document.addEventListener("mouseup", mouseUpHandler);
+  document.addEventListener(
+    e instanceof MouseEvent ? "mousemove" : "touchmove",
+    touchMoveHandler
+  );
+  document.addEventListener(
+    e instanceof MouseEvent ? "mouseup" : "touchend",
+    touchEndHandler
+  );
 };
 
 const Reset = () => {
@@ -152,6 +170,7 @@ defineExpose({
         vertical: props.currentAxes === Axes.Vertical,
       }"
       @mousedown="ExecuteDragButtonEvent($event)"
+      @touchstart.prevent="ExecuteDragButtonEvent($event)"
     >
       <IconArrowRight
         v-if="isDraged === false"
