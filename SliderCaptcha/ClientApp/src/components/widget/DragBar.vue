@@ -209,6 +209,7 @@ defineExpose({
 
   width: 100%;
   height: 100%;
+  max-width: 100%;
 
   &.horizontal {
     height: v-bind(calBarThicknessPixel);
@@ -268,7 +269,6 @@ defineExpose({
     }
 
     .button-icon {
-      width: 50%;
       height: 50%;
 
       &.arrow {

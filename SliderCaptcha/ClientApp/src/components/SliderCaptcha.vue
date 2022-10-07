@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import DragBar from "@/components/widget/DragBar.vue";
 
 import { Axes } from "@/types/Axes";
@@ -52,10 +52,10 @@ const imageSliderNaturalHeight = ref(0);
 const imageBackgroundNaturalWidth = ref(0);
 const imageBackgroundNaturalHeight = ref(0);
 
-const imageSliderClientWidth = ref(null);
-const imageSliderClientHeight = ref(null);
-const imageBackgroundClientWidth = ref(null);
-const imageBackgroundClientHeight = ref(null);
+const imageSliderClientWidth = ref(0);
+const imageSliderClientHeight = ref(0);
+const imageBackgroundClientWidth = ref(0);
+const imageBackgroundClientHeight = ref(0);
 
 const dragTrailRecord = ref<number[]>([]);
 
@@ -99,14 +99,6 @@ const currentAxes = computed(() => {
 });
 
 const processImageSliderStyle = computed(() => {
-  if (
-    imageSliderClientWidth.value == null ||
-    imageSliderClientHeight.value == null ||
-    imageBackgroundClientWidth.value == null ||
-    imageBackgroundClientHeight.value == null
-  )
-    return {};
-
   const imgRemainSpace =
     currentAxes.value === Axes.Horizontal
       ? imageBackgroundClientWidth.value - imageSliderClientWidth.value
@@ -163,6 +155,22 @@ const isDragedOffsetAcceptable = computed(() => {
   );
 });
 
+const UpdateImageSliderLength = (e: Event) => {
+  const target = e.target as HTMLImageElement;
+  imageSliderNaturalWidth.value = target.naturalWidth;
+  imageSliderNaturalHeight.value = target.naturalHeight;
+  imageSliderClientWidth.value = target.clientWidth;
+  imageSliderClientHeight.value = target.clientHeight;
+};
+
+const UpdateImageBackgroundLength = (e: Event) => {
+  const target = e.target as HTMLImageElement;
+  imageBackgroundNaturalWidth.value = target.naturalWidth;
+  imageBackgroundNaturalHeight.value = target.naturalHeight;
+  imageBackgroundClientWidth.value = target.clientWidth;
+  imageBackgroundClientHeight.value = target.clientHeight;
+};
+
 const RetrieveImg = () => {
   const queryObject = {
     CaptchaDirection: selectedDirection.value,
@@ -181,18 +189,6 @@ const RetrieveImg = () => {
 
       isRetrieveCaptchaImageSuccess.value = true;
       emit("UpdateRetrieveCaptchaImageStatus", true);
-
-      nextTick(() => {
-        imageSliderNaturalWidth.value = ImageSlider.value?.naturalWidth;
-        imageSliderNaturalHeight.value = ImageSlider.value?.naturalHeight;
-        imageBackgroundNaturalWidth.value = ImageBackground.value?.naturalWidth;
-        imageBackgroundNaturalHeight.value =
-          ImageBackground.value?.naturalHeight;
-        imageSliderClientWidth.value = ImageSlider.value?.clientWidth;
-        imageSliderClientHeight.value = ImageSlider.value?.clientHeight;
-        imageBackgroundClientWidth.value = ImageBackground.value?.clientWidth;
-        imageBackgroundClientHeight.value = ImageBackground.value?.clientHeight;
-      });
     })
     .catch((err) => {
       isRetrieveCaptchaImageSuccess.value = false;
@@ -233,12 +229,14 @@ defineExpose({
           class="image-background"
           :class="{ 'fit-width': selectedDisplayMode === DisplayMode.FitWidth }"
           :src="resultObject.backgroundBase64String"
+          @load="UpdateImageBackgroundLength"
         />
         <img
           ref="ImageSlider"
           class="image-slider"
           :src="resultObject.sliderBase64String"
           :style="{ ...processImageSliderStyle, ...processDisplayModeStyle }"
+          @load="UpdateImageSliderLength"
         />
         <IconRotateRight class="reload-icon" @click="Reload()" />
       </div>
